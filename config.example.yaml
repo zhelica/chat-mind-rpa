@@ -1,0 +1,121 @@
+dbkey: XXXXX
+# AES加密用的密钥和XOR，格式为字符串, 设置为空，自动查找
+# 示例：aes_xor_key: 1234567890,17
+aes_xor_key:
+
+# RPA API 服务配置（可选）
+# 提供 HTTP REST API 接口，允许外部系统直接调用 RPA 任务
+rpa_api:
+  enabled: true
+  host: 0.0.0.0
+  port: 8001
+  #接口回调地址
+  callback_url: "http://127.0.0.1:8080/openApi/getUpdates/message"
+  #延迟消费秒数
+  process_delay: 0
+  #自动消费
+  auto_consume: true
+  #api消费
+  api_consume: true
+
+# MCP服务配置
+mcp:
+  # 监听主机地址，通常为0.0.0.0表示所有网卡
+  host: 0.0.0.0
+  # 监听端口
+  port: 8000
+
+dingtalk:
+  # 钉钉机器人Webhook地址，当微信异常时，将推送异常消息和登录二维码
+  webhook_url: https://example.com/robot/send?access_token=YOUR_DINGTALK_TOKEN
+
+logging:
+  # 日志文件最多保留数量
+  backup_count: 5
+  # 日志级别，可选：DEBUG/INFO/WARNING/ERROR
+  level: INFO
+  # 单个日志文件最大字节数
+  max_size: 10485760
+  # 日志文件存放路径
+  path: logs
+
+mqtt:
+  # MQTT客户端ID前缀
+  client_id: weixin_omni
+  # MQTT服务器地址
+  host: 127.0.0.1
+  # MQTT密码
+  password: 'public'
+  # MQTT端口
+  port: 1883
+  # MQTT用户名
+  username: admin
+
+plugins:
+  # 图片密钥辅助插件
+  image-aes-plugin:
+    enabled: true
+  # 空群屏蔽插件
+  block-empty-room-plugin:
+    enabled: true
+    priority: 2000
+  # 聊天上下文插件
+  chat-context-plugin:
+    enabled: true
+    priority: 1999
+  # OpenAI对话插件
+  openai-bot-plugin:
+    enabled: true
+    priority: 1497
+    api_url: https://127.0.0.1/prod-api/wechat/msg/rpaMsg
+    openai_api_key: sk-111
+    openai_base_url: https://api.deepseek.com/v1/
+    openai_model: deepseek-chat  # 使用的模型名
+    prompt: 你是一个聊天机器人，请根据用户的问题给出回答。历史对话：{{chat_history}} 当前时间：{{time_now}} 
+      你的昵称：{{self_nickname}} 群昵称：{{room_nickname}} 消息来自于：{{contact_nickname}}
+  # 自发消息插件
+  self-msg-plugin:
+    enabled: true
+    priority: 1998
+rpa:
+  # RPA相关参数
+  action_delay: 0.3  # 操作延迟（秒）
+  scroll_delay: 1  # 滚动延迟（秒）
+  max_retries: 3  # 最大重试次数
+  switch_contact_delay: 0.3  # 切换联系人延迟（秒）
+  ocr:
+    merge_threshold: 5.0  # OCR合并阈值
+    min_confidence: 0.5  # 最小置信度
+    remote_url: http://example.com/ocr  # 远程OCR服务地址
+    use_remote: false  # 是否使用远程OCR
+  room_action_offset:
+  - 0
+  - -30
+  search_contact_offset:
+  - 0
+  - 40
+  side_bar_delay: 3
+  timeout: 30
+  window_margin: 20
+  window_show_delay: 1.5
+  short_term_rate: 0.15
+  short_term_capacity: 2
+  long_term_rate: 0.25
+  long_term_capacity: 10
+
+wxgf:
+  # 微信GF解析API地址，暂时未开放，查看roammap更新计划
+  api_url: http://example.com/api/v1/decrypt
+
+http_upload:
+  #上传微信二维码图片地址
+  upload_url: "http://127.0.0.1/prod-api/common/upload/image"
+
+bot_notify:
+  #发送消息通知地址，发送二维码图片
+  #当微信掉线时，可以截图微信登录二维码并发送通知
+  #私有部署 ilink 服务推荐使用开源项目：https://github.com/zhelica/chat-mind-iLink
+  send_url: "http://127.0.0.1/prod-api/api/bot/sendMessageSimple"
+  ilink_bot_id: "2fef025d2b14@im.bot"
+  secret: "1234"
+  to_user_id: "o9cq80zVhB35-jdQsb1DUkS-RWL0@im.wechat"
