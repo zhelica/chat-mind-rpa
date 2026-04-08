@@ -17,7 +17,7 @@
 Omni-Bot-SDK 是一个**运行时零侵入**的微信自动化框架。它不依赖复杂的逆向工程或Hook技术，而是通过**"视觉感知+数据驱动"**的方式，模拟人类操作习惯，安全、稳定地构建你的专属微信机器人。
 
 🙏 **鸣谢**
-本项目基于开源项目 [https://github.com/weixin-omni/omni-bot-sdk-oss](sslocal://flow/file_open?url=https%3A%2F%2Fgithub.com%2Fweixin-omni%2Fomni-bot-sdk-oss&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=) 进行二次开发。
+本项目基于开源项目 **[omni-bot-sdk-oss](https://github.com/weixin-omni/omni-bot-sdk-oss)** 进行二次开发。
 原作者已停止维护，本分支在此基础上新增：**API 调用方式、消息撤回功能、对接微信 ilink 协议、掉线自动发送二维码**等能力。
 
 ## 🌟 核心原理：像人一样"看"和"做"
@@ -275,7 +275,7 @@ sequenceDiagram
 > 3. **注意**：每天自动通过人数有限，请耐心等待。
 
 <p align="center">
-  <img src="https://gitee.com/mgwdzxn/chat-mind-rpa/raw/develop/docs/public/author.jpg" alt="微信二维码名片" width="200">
+  <img src="https://github.com/zhelica/chat-mind-rpa/blob/main/docs/public/author.jpg?raw=true" alt="微信二维码名片" width="200">
 </p>
 
 ### ☕️ 请作者喝杯咖啡
@@ -283,7 +283,7 @@ sequenceDiagram
 如果这个项目对你有帮助，或者你想支持项目的持续开发，欢迎请我喝杯咖啡！
 
 <p align="center">
-  <img src="https://gitee.com/mgwdzxn/chat-mind-rpa/raw/develop/docs/public/zs.jpg" width="200">
+  <img src="https://github.com/zhelica/chat-mind-rpa/blob/main/docs/public/zs.jpg?raw=true" width="200">
 </p>
 
 ---
