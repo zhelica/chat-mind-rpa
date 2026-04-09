@@ -6,12 +6,11 @@
 @Author      : SiYuan
 @Email       : 863909694@qq.com
 @File        : MemoTrace-emoji_parser.py
-@Description :
+@Description : 表情包解析
 """
 import base64
 import html
 import re
-import traceback
 
 import xmltodict
 from google.protobuf.json_format import MessageToDict
@@ -20,77 +19,58 @@ from .util.protocbuf import emoji_desc_pb2
 
 
 def parser_emoji(xml_content):
-    result = {"md5": 0, "url": "", "width": 0, "height": 0, "desc": ""}
+    result = {"md5": "", "url": "", "width": 0, "height": 0, "desc": ""}
 
     def extract_msg(text):
         pattern = r"(<msg>.*?</msg>)"
         match = re.search(pattern, text, re.DOTALL)
         return match.group(0) if match else ""
 
-    print(f"[parser_emoji] 输入类型: {type(xml_content)}, 长度: {len(xml_content) if xml_content else 0}")
-    if xml_content and isinstance(xml_content, bytes):
-        print(f"[parser_emoji] 原始数据前100字节: {xml_content[:100]}")
-    elif xml_content:
-        print(f"[parser_emoji] 内容前200字符: {str(xml_content)[:200]}")
-
     xml_dict = {}
     try:
         xml_dict = xmltodict.parse(xml_content)
-        print(f"[parser_emoji] 第一次xmltodict解析成功: {bool(xml_dict)}")
-    except Exception as e:
-        print(f"[parser_emoji] 第一次解析失败: {e}")
+    except Exception:
         try:
             xml_content = extract_msg(xml_content)
-            print(f"[parser_emoji] extract_msg后: {xml_content[:200] if xml_content else 'empty'}")
             xml_dict = xmltodict.parse(xml_content)
-            print(f"[parser_emoji] 第二次xmltodict解析成功: {bool(xml_dict)}")
-        except Exception as e2:
-            print(f"[parser_emoji] 第二次解析失败: {e2}")
+        except Exception:
+            return result
 
     try:
         emoji_dic = xml_dict.get("msg", {}).get("emoji", {})
-        print(f"[parser_emoji] emoji_dic 内容: {emoji_dic}")
 
-        if "@androidmd5" in emoji_dic:
-            md5 = emoji_dic.get("@androidmd5", "")
-        else:
-            md5 = emoji_dic.get("@md5", "")
-        print(f"[parser_emoji] md5: {md5}")
+        # 获取 md5
+        md5 = emoji_dic.get("@androidmd5") or emoji_dic.get("@md5", "")
 
-        desc_bs64 = emoji_dic.get("@desc", "")
+        # 获取 desc (protobuf解析)
         desc = ""
+        desc_bs64 = emoji_dic.get("@desc", "")
         if desc_bs64:
-            print(f"[parser_emoji] desc_bs64 长度: {len(desc_bs64)}")
-            desc_bytes_proto = base64.b64decode(desc_bs64)
-            message = emoji_desc_pb2.EmojiDescData()
-            message.ParseFromString(desc_bytes_proto)
-            dict_output = MessageToDict(message)
-            for item in dict_output.get("descItem", []):
-                desc = item.get("desc", "")
-                if desc:
-                    break
-            print(f"[parser_emoji] 解析后的desc: {desc}")
+            try:
+                desc_bytes_proto = base64.b64decode(desc_bs64)
+                message = emoji_desc_pb2.EmojiDescData()
+                message.ParseFromString(desc_bytes_proto)
+                dict_output = MessageToDict(message)
+                for item in dict_output.get("descItem", []):
+                    desc = item.get("desc", "")
+                    if desc:
+                        break
+            except Exception:
+                pass
 
+        # 获取 url
         url = emoji_dic.get("@cdnurl", "")
         if url:
             url = html.unescape(url)
-        print(f"[parser_emoji] url: {url}")
 
         result = {
             "md5": md5,
             "url": url,
-            "width": emoji_dic.get("@width", 0),
-            "height": emoji_dic.get("@height", 0),
+            "width": int(emoji_dic.get("@width", 0)),
+            "height": int(emoji_dic.get("@height", 0)),
             "desc": desc,
         }
-        print(f"[parser_emoji] 最终result: {result}")
-    except Exception as e:
-        print(f"[parser_emoji] 异常: {traceback.format_exc()}")
-        print(f"[parser_emoji] xml_dict: {xml_dict}")
-        print(xml_content)
-    finally:
-        return result
+    except Exception:
+        pass
 
-
-if __name__ == "__main__":
-    pass
+    return result
