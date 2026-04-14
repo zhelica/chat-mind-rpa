@@ -9,6 +9,7 @@
 @Description :
 """
 import html
+import logging
 import re
 import traceback
 import xml.etree.ElementTree as ET
@@ -775,6 +776,7 @@ def parser_reply(xml_content):
             "refer_text": "引用错误",
         }
     xml_content = robust_xml_sanitizer(xml_content).replace("&#16;", "")
+    logger = logging.getLogger(__name__)
     try:
         try:
             # 1. 【关键修复】去除 BOM 头 (UTF-8 SIG)
@@ -795,10 +797,12 @@ def parser_reply(xml_content):
                     pure_xml = xml_match.group(1)
                 else:
                     raise ValueError("无法在字符串中找到 XML 内容")
-            # 3. 打印纯 XML 用于二次确认（调试用）
-            # print(f"【调试】准备解析的纯 XML: {pure_xml[:200]}...")  # 只打印前200字符防止刷屏
+            # 3. 调试：打印原始 XML 内容（查找 svrid 原始值）
+            logger.info(f"[DEBUG parser_reply] pure_xml content:\n{pure_xml}")
             # 4. 解析
             data = xmltodict.parse(pure_xml).get("msg", {}).get("appmsg", {})
+            quote_sender_id = xmltodict.parse(pure_xml).get("msg", {}).get("fromusername", "")
+
         except Exception as e:
             # print(e)
             # print(pure_xml)
@@ -814,6 +818,7 @@ def parser_reply(xml_content):
         chatusr = data.get("refermsg", {}).get("chatusr", "")
         #引用消息id
         svrid = data.get("refermsg", {}).get("svrid", 0)
+        logger.info(f"[DEBUG parser_reply] raw svrid from xmltodict: {svrid}, type: {type(svrid)}")
         #引用消息内容
         content = data.get("refermsg", {}).get("content", "")
 
@@ -830,94 +835,95 @@ def parser_reply(xml_content):
                 'fromusr': fromusr,
                 'chatusr':chatusr,
                 'svrid':svrid,
-                "content": content
+                "content": content,
+                "quote_sender_id": quote_sender_id
             }
-        # elif refermsg_type == 3:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【图片消息】",
-        #     }
-        # elif refermsg_type == 34:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【语音消息】",
-        #     }
-        # elif refermsg_type == 43:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【视频消息】",
-        #     }
-        # elif refermsg_type == 47:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【表情包】",
-        #     }
-        # elif refermsg_type == 49:
-        #     content = data.get('refermsg', {}).get('content', '')
-        #     content = xmltodict.parse(content).get('msg', {}).get('appmsg', {})
-        #     refermsg_content = content.get('title', '')
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：{refermsg_content}",
-        #         "url": content.get('url', ''),
-        #     }
-        # elif refermsg_type == 0:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": data.get('refermsg', {}).get('ref_msg_text', ''),
-        #     }
-        # elif refermsg_type == 66:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【名片分享】",
-        #     }
-        # elif refermsg_type == 42:
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【名片分享】",
-        #     }
-        # elif refermsg_type == 48:
-        #     position_dict = xmltodict.parse(data.get('refermsg', {}).get('content', '')).get('msg')
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：{position_dict['location'].get('@poiname')}",
-        #     }
-        # else:
-        #     logger.info(f'发现未知的引用消息\n{data}')
-        #     return {
-        #         # "type": msg_type,
-        #         "text": title,
-        #         'svrid': data.get('refermsg', {}).get('svrid', 0),
-        #         'refermsg_type': refermsg_type,
-        #         "refer_text": f"{displayname}：【其他消息】",
-        #     }
+        elif refermsg_type == 3:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【图片消息】",
+            }
+        elif refermsg_type == 34:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【语音消息】",
+            }
+        elif refermsg_type == 43:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【视频消息】",
+            }
+        elif refermsg_type == 47:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【表情包】",
+            }
+        elif refermsg_type == 49:
+            content = data.get('refermsg', {}).get('content', '')
+            content = xmltodict.parse(content).get('msg', {}).get('appmsg', {})
+            refermsg_content = content.get('title', '')
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：{refermsg_content}",
+                "url": content.get('url', ''),
+            }
+        elif refermsg_type == 0:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": data.get('refermsg', {}).get('ref_msg_text', ''),
+            }
+        elif refermsg_type == 66:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【名片分享】",
+            }
+        elif refermsg_type == 42:
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【名片分享】",
+            }
+        elif refermsg_type == 48:
+            position_dict = xmltodict.parse(data.get('refermsg', {}).get('content', '')).get('msg')
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：{position_dict['location'].get('@poiname')}",
+            }
+        else:
+            logger.info(f'发现未知的引用消息\n{data}')
+            return {
+                # "type": msg_type,
+                "text": title,
+                'svrid': data.get('refermsg', {}).get('svrid', 0),
+                'refermsg_type': refermsg_type,
+                "refer_text": f"{displayname}：【其他消息】",
+            }
     except:
         print(f"{xml_content}\n\n引用消息解析错误\n{traceback.format_exc()}")
         return {

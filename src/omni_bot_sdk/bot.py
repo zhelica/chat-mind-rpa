@@ -69,7 +69,7 @@ class Bot:
         # 用户服务与用户信息初始化
         self.user_service: UserService = UserService(self.config.get("dbkey"))
         self.user_info: UserInfo = self.user_service.get_user_info()
-        allow_versions = ["4.1.8.29"]
+        allow_versions = ["4.1.8.101"]
         if self.user_info.version not in allow_versions:
             self.logger.error(
                 f"当前微信版本不在支持范围内,目前支持的版本包括：{','.join(allow_versions)}"
@@ -292,9 +292,19 @@ class Bot:
 
         # 初始化主聊天窗口
         self.logger.info("Initializing main chat window...")
+        max_retries = 10
+        retry_count = 0
         while not self.window_manager.init_chat_window():
+            retry_count += 1
+            if retry_count >= max_retries:
+                self.logger.error(
+                    f"初始化聊天窗口失败，已重试 {max_retries} 次，请检查微信是否已打开并处于聊天界面"
+                )
+                raise RuntimeError(
+                    f"初始化聊天窗口失败，已重试 {max_retries} 次，请检查微信是否已打开并处于聊天界面"
+                )
             self.logger.warning(
-                "Failed to initialize chat window, retrying in 2 seconds..."
+                f"Failed to initialize chat window, retrying in 2 seconds... ({retry_count}/{max_retries})"
             )
             time.sleep(2)
         self.logger.info("Initializing pyq window...")
@@ -308,13 +318,13 @@ class Bot:
             if hasattr(component, "start"):
                 self.logger.info(f"Starting service {component.__class__.__name__}...")
                 component.start()
-        if (
-            self.config.get("aes_xor_key") is None
-            or len(self.config.get("aes_xor_key")) == 0
-        ):
-            self.find_image_aes()
-        else:
-            self.dat_decrypt_service.setup_lazy()
+        # if (
+        #     self.config.get("aes_xor_key") is None
+        #     or len(self.config.get("aes_xor_key")) == 0
+        # ):
+        #     self.find_image_aes()
+        # else:
+        #     self.dat_decrypt_service.setup_lazy()
         self.is_running = True
         self._notify_status(self.STATUS_RUNNING)
         self.logger.info("--- Bot Setup Complete. All services are running. ---")
